@@ -9,7 +9,6 @@ from sqlalchemy import create_engine
 
 TEMP_PATH = "/home/dcontreras/Workshop002/temp"
 
-# Extract Grammy Awards data from PostgreSQL
 def extract_grammy_data():
     logging.info("Extracting Grammy Data")
     try:
@@ -30,7 +29,6 @@ def extract_grammy_data():
         logging.error(f"Error extracting Grammy data: {e}")
         return False
 
-# Extract Spotify data from CSV
 def extract_spotify_data(csv_path="/home/dcontreras/Workshop002/dataset.csv"):
     try:
         df = pd.read_csv(csv_path)
@@ -45,7 +43,6 @@ def extract_spotify_data(csv_path="/home/dcontreras/Workshop002/dataset.csv"):
         logging.error(f"Error extracting Spotify data: {e}")
         return False
 
-# Extract MusicBrainz API
 def extract_musicbrainz_data(csv_path=f"{TEMP_PATH}/spotify_data.csv"):
     def search_artist_API(artist, retries=3, cooldown=2):
         artist_encoded = quote(artist)
@@ -77,13 +74,15 @@ def extract_musicbrainz_data(csv_path=f"{TEMP_PATH}/spotify_data.csv"):
         if "artists" not in df.columns:
             raise ValueError("Missing 'artists' column in Spotify dataset")
 
-        logging.info("Starting MusicBrainz API Extraction")
-        df["musicbrainz_id"] = df["artists"].apply(search_artist_API)
+        df_sample = df.sample(n=2000, random_state=42)
+
+        logging.info("Starting API Extraction on sample")
+        df_sample["musicbrainz_id"] = df_sample["artists"].apply(search_artist_API)
 
         os.makedirs(TEMP_PATH, exist_ok=True)
-        df.to_csv(f"{TEMP_PATH}/spotify_enriched.csv", index=False)
+        df_sample.to_csv(f"{TEMP_PATH}/spotify_API.csv", index=False)
 
-        logging.info("MusicBrainz enrichment complete and saved")
+        logging.info("API extraction complete and saved to spotify_API.csv")
         return True
 
     except Exception as e:
