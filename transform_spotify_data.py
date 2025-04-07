@@ -10,15 +10,18 @@ def transform_spotify_data():
         df = pd.read_csv(f"{TEMP_PATH}/spotify_data.csv")
 
         df.drop_duplicates(inplace=True)
-
-        df.dropna(subset=["name", "artists"], inplace=True)
+        df.dropna(subset=["track_name", "artists"], inplace=True)
 
         df.rename(columns={"artists": "artist"}, inplace=True)
-
         df.columns = df.columns.str.lower().str.replace(' ', '_')
 
+        # Convertir duración de milisegundos a minutos (dos decimales)
         if "duration_ms" in df.columns:
-            df["duration_min"] = df["duration_ms"] / 60000
+            df["duration_min"] = (df["duration_ms"] / 60000).round(2)
+
+        # Redondear tempo a un decimal
+        if "tempo" in df.columns:
+            df["tempo"] = df["tempo"].round(1)
 
         output_path = os.path.join(TEMP_PATH, "spotify_transformed.csv")
         df.to_csv(output_path, index=False)
