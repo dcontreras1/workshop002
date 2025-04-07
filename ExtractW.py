@@ -44,6 +44,12 @@ def extract_spotify_data(csv_path="/home/dcontreras/Workshop002/dataset.csv"):
         return False
 
 def extract_musicbrainz_data(csv_path=f"{TEMP_PATH}/spotify_data.csv"):
+    output_path = f"{TEMP_PATH}/spotify_API.csv"
+
+    if os.path.exists(output_path):
+        logging.info("spotify_API.csv already exists, skipping API extraction")
+        return True
+
     def search_artist_API(artist, retries=3, cooldown=2):
         artist_encoded = quote(artist)
         url = f"https://musicbrainz.org/ws/2/artist?query={artist_encoded}&fmt=json&limit=1"
@@ -80,7 +86,7 @@ def extract_musicbrainz_data(csv_path=f"{TEMP_PATH}/spotify_data.csv"):
         df_sample["musicbrainz_id"] = df_sample["artists"].apply(search_artist_API)
 
         os.makedirs(TEMP_PATH, exist_ok=True)
-        df_sample.to_csv(f"{TEMP_PATH}/spotify_API.csv", index=False)
+        df_sample.to_csv(output_path, index=False)
 
         logging.info("API extraction complete and saved to spotify_API.csv")
         return True
