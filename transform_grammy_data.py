@@ -10,6 +10,7 @@ def transform_grammy_data():
     logging.info("Transforming Grammy Data")
 
     try:
+        # Obtener conexión
         connection = BaseHook.get_connection("PSQL_Workshop_conn")
         db_url = f"postgresql://{connection.login}:{connection.password}@{connection.host}:{connection.port}/{connection.schema}"
         engine = create_engine(db_url)
@@ -34,25 +35,35 @@ def transform_grammy_data():
                     nominee = COALESCE(nominee, 'Unknown')
             """))
 
-            # Añadir columna binaria para "winner"
+            # Añadir columna binaria de ganador
             conn.execute(text("""
                 ALTER TABLE grammy_awards_table ADD COLUMN IF NOT EXISTS winner_binary INT;
                 UPDATE grammy_awards_table
                 SET winner_binary = CASE WHEN winner = 'Yes' THEN 1 ELSE 0 END;
             """))
 
-        # Cargar los datos a un DataFrame para transformar columnas específicas
+        # Leer los datos transformados a un DataFrame
         df = pd.read_sql("SELECT * FROM grammy_awards_table", engine)
 
-        # Formatear las fechas
+        # Procesar columnas de fecha si existen
         for col in ["published_at", "updated_at"]:
             if col in df.columns:
-                df[col] = pd.to_datetime(df[col]).dt.date
+                try:
+                    df[col] = pd.to_datetime(df[col], errors='coerce')
+                    null_count = df[col].isnull().sum()
+                    logging.info(f"{null_count} null values found in column '{col}' after datetime conversion")
+                    if pd.api.types.is_datetime64_any_dtype(df[col]):
+                        df[col] = df[col].dt.date
+                    else:
+                        logging.warning(f"Column '{col}' is not datetime after conversion.")
+                except Exception as e:
+                    logging.warning(f"Skipping column '{col}' due to error: {e}")
 
-        # Eliminar la columna year si existe
+        # Eliminar columna 'year' si existe
         if "year" in df.columns:
             df.drop(columns=["year"], inplace=True)
 
+        # Guardar archivo transformado
         output_path = os.path.join(TEMP_PATH, "grammy_transformed.csv")
         df.to_csv(output_path, index=False)
         logging.info(f"Transformed Grammy data saved to {output_path}")
