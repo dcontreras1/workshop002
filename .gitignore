@@ -1,0 +1,4 @@
+workshop_venv/
+credentials/
+airflow/logs/
+temp/
