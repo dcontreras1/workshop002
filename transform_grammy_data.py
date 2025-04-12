@@ -45,17 +45,17 @@ def transform_grammy_data():
         # Leer los datos transformados a un DataFrame
         df = pd.read_sql("SELECT * FROM grammy_awards_table", engine)
 
-        # Procesar columnas de fecha si existen
+        # Transformar columnas de fecha a solo la parte de fecha (YYYY-MM-DD)
         for col in ["published_at", "updated_at"]:
             if col in df.columns:
                 try:
-                    df[col] = pd.to_datetime(df[col], errors='coerce')
+                    df[col] = pd.to_datetime(df[col], errors='coerce', utc=True)
                     null_count = df[col].isnull().sum()
                     logging.info(f"{null_count} null values found in column '{col}' after datetime conversion")
-                    if pd.api.types.is_datetime64_any_dtype(df[col]):
-                        df[col] = df[col].dt.date
-                    else:
-                        logging.warning(f"Column '{col}' is not datetime after conversion.")
+
+                    df[col] = df[col].dt.date
+                    logging.info(f"Column '{col}' successfully converted to date format.")
+
                 except Exception as e:
                     logging.warning(f"Skipping column '{col}' due to error: {e}")
 
